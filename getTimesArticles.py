@@ -1,6 +1,7 @@
 import urllib2
 import json
 import datetime
+import time
 import sys
 import argparse
 import logging
@@ -60,6 +61,7 @@ def getArticles(date, api_key, json_file_path):
                 json_file.close()
             else:
                 break
+            time.sleep(3)
         except HTTPError:
             logging.error("something went wrong with page %s on %s . Here's the URL of the call: %s", page, date, request_string)
 
@@ -74,28 +76,30 @@ def parseArticles(date, csv_file_name, json_file_path):
         
         # loop through the articles putting what we need in a CSV
         out_file = open(csv_file_name, 'ab')
-
-        for article in articles["response"]["docs"]:
-            keywords = ""
-            # if (article["source"] == "The New York Times" and article["document_type"] == "article"):
-                    
-            keywords = getMultiples(article["keywords"],"value")
-            
-            variables = [
-                article["pub_date"], 
-                keywords, 
-                str(article["headline"]["main"]).decode("utf8"), 
-                str(article["source"]).decode("utf8"), 
-                str(article["document_type"]).decode("utf8"), 
-                article["web_url"],
-                str(article["news_desk"]).decode("utf8"),
-                str(article["section_name"]).decode("utf8"),
-                str(article["snippet"]).decode("utf8"),
-                str(article["lead_paragraph"]).decode("utf8"),
-                str(article["abstract"]).decode("utf8")
-                ]
-            line = "\t".join(variables)
-            out_file.write(line.encode("utf8")+"\n")
+        try:
+            for article in articles["response"]["docs"]:
+                keywords = ""
+                # if (article["source"] == "The New York Times" and article["document_type"] == "article"):
+                if "keywords" in articles.keys():   
+                    keywords = getMultiples(article["keywords"],"value")
+    
+                # should probably pull these if/else checks into a module
+                variables = [
+                    article["pub_date"] if article["pub_date"] in article.keys() else "", 
+                    keywords, 
+                    str(article["headline"]["main"]).decode("utf8") if "main" in article["headline"].keys() else "", 
+                    str(article["source"]).decode("utf8") if "source" in article.keys() else "", 
+                    str(article["document_type"]).decode("utf8") if "document_type" in article.keys() else "", 
+                    article["web_url"] if "web_url" in article.keys() else "",
+                    str(article["news_desk"]).decode("utf8") if "news_desk" in article.keys() else "",
+                    str(article["section_name"]).decode("utf8") if "section_name" in article.keys() else "",
+                    str(article["snippet"]).decode("utf8") if "snippet" in article.keys() else "",
+                    str(article["lead_paragraph"]).decode("utf8") if "lead_paragraph" in article.keys() else "",
+                    ]
+                line = "\t".join(variables)
+                out_file.write(line.encode("utf8")+"\n")
+        except KeyError:
+            logging.error("KeyError in %s page %s", date, file_number)
 
 # Main function where stuff gets done
 
@@ -111,21 +115,21 @@ def main():
     json_file_path = args.json
     csv_file_name = args.csv
     api_key = args.key    
-    start = datetime.date( year = 2013, month = 2, day = 3 )
-    end = datetime.date( year = 2013, month = 2, day = 4 )
+    start = datetime.date( year = 2013, month = 2, day = 6 )
+    end = datetime.date( year = 2013, month = 2, day = 7 )
     log_file = "".join([json_file_path,"getTimesArticles.log"])
     logging.basicConfig(filename=log_file, level=logging.INFO)
     
     logging.info("Getting started.") 
     try:
         # LOOP THROUGH THE SPECIFIED DATES
-        first_date = start
-        last_date = first_date + datetime.timedelta(days=90)
         for date in daterange( start, end ):
             date = date.strftime("%Y%m%d")
             logging.info("Working on %s." % date)
             getArticles(date, api_key, json_file_path)
             parseArticles(date, csv_file_name, json_file_path)
+    except:
+        logging.error("Unexpected error: %s", str(sys.exc_info()[0]))
     finally:
         logging.info("Finished.")
 
