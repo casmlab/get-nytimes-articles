@@ -15,3 +15,5 @@ Within the script, set your query parameters on line 54. See the Times API docs 
 ## Planned improvements
 - accept query parameters from command line
 - solve KeyError issues in parse module
+- make script smart about whether or not to keep fetching for that day (i.e., stop when no more articles)
+- make script smart about running multi-day processes (i.e., respect the API limit and wait when more than 10K calls needed)
