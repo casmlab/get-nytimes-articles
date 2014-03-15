@@ -8,7 +8,7 @@ New York Times Article API Docs: http://developer.nytimes.com/docs/read/article_
 Requesting an API Key for the Times API: http://developer.nytimes.com/docs/reference/keys
 
 ## Usage
-Within the script, set your query parameters on line 54. See the Times API docs for available filters.
+Within the script, set your query parameters on line 54. See the Times API docs for available filters. The example query returns all articles for a given date range (set in lines 118 and 119).
 
 ```python getTimesArticles.py -j JSON_FOLDER_PATH -c OUTPUT_FILE -k API_KEY```
 
