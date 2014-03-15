@@ -1,0 +1,130 @@
+import urllib2
+import json
+import datetime
+import sys
+import argparse
+from urllib2 import HTTPError
+
+# helper function to iterate through dates
+def daterange( start_date, end_date ):
+    if start_date <= end_date:
+        for n in range( ( end_date - start_date ).days + 1 ):
+            yield start_date + datetime.timedelta( n )
+    else:
+        for n in range( ( start_date - end_date ).days + 1 ):
+            yield start_date - datetime.timedelta( n )
+
+# helper function to get json into a form I can work with       
+def convert(input):
+    if isinstance(input, dict):
+        return {convert(key): convert(value) for key, value in input.iteritems()}
+    elif isinstance(input, list):
+        return [convert(element) for element in input]
+    elif isinstance(input, unicode):
+        return input.encode('utf-8')
+    else:
+        return input
+
+# helpful function to figure out what to name individual JSON files        
+def getJsonFileName(date, page, json_file_path):
+    json_file_name = ".".join([date,str(page),'json'])
+    json_file_name = "".join([json_file_path,json_file_name])
+    return json_file_name
+
+# helpful function for processing keywords, mostly    
+def getMultiples(items, key):
+    values_list = ""
+    if len(items) > 0:
+        num_keys = 0
+        for item in items:
+            if num_keys == 0:
+                values_list = item[key]                
+            else:
+                values_list =  "; ".join([values_list,item[key]])
+            num_keys += 1
+    return values_list
+    
+# get the articles from the NYTimes Article API    
+def getArticles(date, api_key, json_file_path):
+    # LOOP THROUGH THE 100 PAGES NYTIMES ALLOWS FOR THAT DATE
+    for page in range(2):
+        print "On page %s" % page
+        try:
+            request_string = "http://api.nytimes.com/svc/search/v2/articlesearch.json?begin_date=" + date + "&end_date=" + date + "&page=" + str(page) + "&api-key=" + api_key
+            response = urllib2.urlopen(request_string)
+            content = response.read()
+            if content:
+                json_file_name = getJsonFileName(date, page, json_file_path)
+                json_file = open(json_file_name, 'w')
+                json_file.write(content)
+                json_file.close()
+            else:
+                break
+        except HTTPError:
+            print "something went wrong with page %s on %s . Here's the URL of the call: %s" % (page, date, request_string)
+
+# parse the JSON files you stored into a tab-delimited file
+def parseArticles(date, csv_file_name, json_file_path):
+    for file_number in range(2):
+        # get the articles just fetched and put them into a dictionary
+        file_name = getJsonFileName(date,file_number, json_file_path)
+        in_file = open(file_name, 'r')
+        articles = convert(json.loads(in_file.read()))
+        in_file.close()
+        
+        # loop through the articles putting what we need in a CSV
+        out_file = open(csv_file_name, 'ab')
+
+        for article in articles["response"]["docs"]:
+            keywords = ""
+            # if (article["source"] == "The New York Times" and article["document_type"] == "article"):
+                    
+            keywords = getMultiples(article["keywords"],"value")
+            
+            variables = [
+                article["pub_date"], 
+                keywords, 
+                str(article["headline"]["main"]).decode("utf8"), 
+                str(article["source"]).decode("utf8"), 
+                str(article["document_type"]).decode("utf8"), 
+                article["web_url"],
+                str(article["news_desk"]).decode("utf8"),
+                str(article["section_name"]).decode("utf8"),
+                str(article["snippet"]).decode("utf8"),
+                str(article["lead_paragraph"]).decode("utf8"),
+                str(article["abstract"]).decode("utf8")
+                ]
+            line = "\t".join(variables)
+            # print line    
+            out_file.write(line.encode("utf8")+"\n")
+
+# Main function
+if __name__ == '__main__' :
+    parser = argparse.ArgumentParser(description="A Python tool for grabbing data from the New York Times Article API.")
+    parser.add_argument('-j','--json', required=True, help="path to the folder where you want the JSON files stored")
+    parser.add_argument('-c','--csv', required=True, help="path to the file where you want the CSV file stored")
+    parser.add_argument('-k','--key', required=True, help="your NY Times Article API key")
+    # parser.add_argument('-s','--start-date', required=True, help="start date for collecting articles")
+    # parser.add_argument('-e','--end-date', required=True, help="end date for collecting articles")
+    args = parser.parse_args()
+	
+    # json_file_path = "/Users/libbyh/Dropbox/CASM/Public Officials Social Media/Datasets/Congress and Appointees/MPSA 2014/nytimes json/"
+    # csv_file_name = "/Users/libbyh/Dropbox/CASM/Public Officials Social Media/Datasets/Congress and Appointees/MPSA 2014/nytimes_articles_2013.csv"
+    
+    json_file_path = args.json
+    csv_file_name = args.csv
+    api_key = args.key    
+    start = datetime.date( year = 2013, month = 1, day = 30 )
+    end = datetime.date( year = 2013, month = 1, day = 30 )
+	
+    print "Getting started."
+    try:
+        # LOOP THROUGH THE SPECIFIED DATES
+        for date in daterange( start, end ):
+            date = date.strftime("%Y%m%d")
+            print "Working on %s." % date
+            getArticles(date, api_key, json_file_path)
+            parseArticles(date, csv_file_name, json_file_path)
+    finally:
+        print "Finished."
+	    
