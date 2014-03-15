@@ -3,6 +3,7 @@ import json
 import datetime
 import sys
 import argparse
+import logging
 from urllib2 import HTTPError
 
 # helper function to iterate through dates
@@ -46,9 +47,8 @@ def getMultiples(items, key):
     
 # get the articles from the NYTimes Article API    
 def getArticles(date, api_key, json_file_path):
-    # LOOP THROUGH THE 100 PAGES NYTIMES ALLOWS FOR THAT DATE
-    for page in range(2):
-        print "On page %s" % page
+    # LOOP THROUGH THE 101 PAGES NYTIMES ALLOWS FOR THAT DATE
+    for page in range(101):
         try:
             request_string = "http://api.nytimes.com/svc/search/v2/articlesearch.json?begin_date=" + date + "&end_date=" + date + "&page=" + str(page) + "&api-key=" + api_key
             response = urllib2.urlopen(request_string)
@@ -61,11 +61,11 @@ def getArticles(date, api_key, json_file_path):
             else:
                 break
         except HTTPError:
-            print "something went wrong with page %s on %s . Here's the URL of the call: %s" % (page, date, request_string)
+            logging.error("something went wrong with page %s on %s . Here's the URL of the call: %s", page, date, request_string)
 
 # parse the JSON files you stored into a tab-delimited file
 def parseArticles(date, csv_file_name, json_file_path):
-    for file_number in range(2):
+    for file_number in range(101):
         # get the articles just fetched and put them into a dictionary
         file_name = getJsonFileName(date,file_number, json_file_path)
         in_file = open(file_name, 'r')
@@ -95,11 +95,11 @@ def parseArticles(date, csv_file_name, json_file_path):
                 str(article["abstract"]).decode("utf8")
                 ]
             line = "\t".join(variables)
-            # print line    
             out_file.write(line.encode("utf8")+"\n")
 
-# Main function
-if __name__ == '__main__' :
+# Main function where stuff gets done
+
+def main():
     parser = argparse.ArgumentParser(description="A Python tool for grabbing data from the New York Times Article API.")
     parser.add_argument('-j','--json', required=True, help="path to the folder where you want the JSON files stored")
     parser.add_argument('-c','--csv', required=True, help="path to the file where you want the CSV file stored")
@@ -107,24 +107,28 @@ if __name__ == '__main__' :
     # parser.add_argument('-s','--start-date', required=True, help="start date for collecting articles")
     # parser.add_argument('-e','--end-date', required=True, help="end date for collecting articles")
     args = parser.parse_args()
-	
-    # json_file_path = "/Users/libbyh/Dropbox/CASM/Public Officials Social Media/Datasets/Congress and Appointees/MPSA 2014/nytimes json/"
-    # csv_file_name = "/Users/libbyh/Dropbox/CASM/Public Officials Social Media/Datasets/Congress and Appointees/MPSA 2014/nytimes_articles_2013.csv"
     
     json_file_path = args.json
     csv_file_name = args.csv
     api_key = args.key    
-    start = datetime.date( year = 2013, month = 1, day = 30 )
-    end = datetime.date( year = 2013, month = 1, day = 30 )
-	
-    print "Getting started."
+    start = datetime.date( year = 2013, month = 2, day = 3 )
+    end = datetime.date( year = 2013, month = 2, day = 4 )
+    log_file = "".join([json_file_path,"getTimesArticles.log"])
+    logging.basicConfig(filename=log_file, level=logging.INFO)
+    
+    logging.info("Getting started.") 
     try:
         # LOOP THROUGH THE SPECIFIED DATES
+        first_date = start
+        last_date = first_date + datetime.timedelta(days=90)
         for date in daterange( start, end ):
             date = date.strftime("%Y%m%d")
-            print "Working on %s." % date
+            logging.info("Working on %s." % date)
             getArticles(date, api_key, json_file_path)
             parseArticles(date, csv_file_name, json_file_path)
     finally:
-        print "Finished."
-	    
+        logging.info("Finished.")
+
+if __name__ == '__main__' :
+    main()
+    
