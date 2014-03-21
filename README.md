@@ -7,6 +7,11 @@ New York Times Article API Docs: http://developer.nytimes.com/docs/read/article_
 
 Requesting an API Key for the Times API: http://developer.nytimes.com/docs/reference/keys
 
+## Recent Updates
+- make script smart about whether or not to keep fetching for that day (i.e., stop when no more articles)
+- solve KeyError issues in parse module
+- get better info from API calls with errors
+
 ## Dependencies
 Python v2.7 (not tested on any others)
 Modules:
@@ -28,7 +33,6 @@ Within the script, set your query parameters on line 54. See the Times API docs 
 
 ## Planned improvements
 - accept query parameters from command line
-- solve KeyError issues in parse module
-- make script smart about whether or not to keep fetching for that day (i.e., stop when no more articles)
-- get better info from API calls with errors so can re-request
+- accept dates from the command line
+- capture and re-request page after intermittent "504: Bad Gateway" errors
 - make script smart about running multi-day processes (i.e., respect the API limit and wait when more than 10K calls are needed)

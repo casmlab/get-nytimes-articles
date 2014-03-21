@@ -55,15 +55,24 @@ def getArticles(date, api_key, json_file_path):
             response = urllib2.urlopen(request_string)
             content = response.read()
             if content:
-                json_file_name = getJsonFileName(date, page, json_file_path)
-                json_file = open(json_file_name, 'w')
-                json_file.write(content)
-                json_file.close()
-            else:
-                break
+                articles = convert(json.loads(content))
+                # if there are articles here
+                if len(articles["response"]["docs"]) >= 1:
+                    json_file_name = getJsonFileName(date, page, json_file_path)
+                    json_file = open(json_file_name, 'w')
+                    json_file.write(content)
+                    json_file.close()
+                # if no more articles, go to next date
+                else:
+                    return
+            # else:
+            #     break
             time.sleep(3)
-        except HTTPError:
-            logging.error("something went wrong with page %s on %s . Here's the URL of the call: %s", page, date, request_string)
+        except HTTPError as e:
+            logging.error("HTTPError on page %s on %s (err no. %s: %s) Here's the URL of the call: %s", page, date, e.code, e.reason, request_string)
+        except: 
+            logging.error("Error on %s page %s: %s", date, file_number, sys.exc_info()[0])
+            continue
 
 # parse the JSON files you stored into a tab-delimited file
 def parseArticles(date, csv_file_name, json_file_path):
@@ -77,46 +86,50 @@ def parseArticles(date, csv_file_name, json_file_path):
         except IOError as e:
 			logging.error("IOError in %s page %s: %s %s", date, file_number, e.errno, e.strerror)
 			continue
-            
-        # open the CSV for appending
-        try:
-            out_file = open(csv_file_name, 'ab')
-        except IOError as e:
-			logging.error("IOError: %s %s", date, file_number, e.errno, e.strerror)
-			continue
         
-        # loop through the articles putting what we need in a CSV   
-        try:
-            for article in articles["response"]["docs"]:
-                # if (article["source"] == "The New York Times" and article["document_type"] == "article"):
-                keywords = ""
-                keywords = getMultiples(article["keywords"],"value")
+        # if there are articles in that document, parse them
+        if len(articles["response"]["docs"]) >= 1:  
+            # open the CSV for appending
+            try:
+                out_file = open(csv_file_name, 'ab')
+            except IOError as e:
+    			logging.error("IOError: %s %s", date, file_number, e.errno, e.strerror)
+    			continue
+        
+            # loop through the articles putting what we need in a CSV   
+            try:
+                for article in articles["response"]["docs"]:
+                    # if (article["source"] == "The New York Times" and article["document_type"] == "article"):
+                    keywords = ""
+                    keywords = getMultiples(article["keywords"],"value")
     
-                # should probably pull these if/else checks into a module
-                variables = [
-                    article["pub_date"], 
-                    keywords, 
-                    str(article["headline"]["main"]).decode("utf8").replace("\n","") if "main" in article["headline"].keys() else "", 
-                    str(article["source"]).decode("utf8") if "source" in article.keys() else "", 
-                    str(article["document_type"]).decode("utf8") if "document_type" in article.keys() else "", 
-                    article["web_url"] if "web_url" in article.keys() else "",
-                    str(article["news_desk"]).decode("utf8") if "news_desk" in article.keys() else "",
-                    str(article["section_name"]).decode("utf8") if "section_name" in article.keys() else "",
-                    str(article["snippet"]).decode("utf8").replace("\n","") if "snippet" in article.keys() else "",
-                    str(article["lead_paragraph"]).decode("utf8").replace("\n","") if "lead_paragraph" in article.keys() else "",
-                    ]
-                line = "\t".join(variables)
-                out_file.write(line.encode("utf8")+"\n")
-        except KeyError as e:
-            logging.error("KeyError in %s page %s: %s %s", date, file_number, e.errno, e.strerror)
-            continue
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except: 
-            logging.error("Error on %s page %s: %s", date, file_number, sys.exc_info()[0])
-            continue
+                    # should probably pull these if/else checks into a module
+                    variables = [
+                        article["pub_date"], 
+                        keywords, 
+                        str(article["headline"]["main"]).decode("utf8").replace("\n","") if "main" in article["headline"].keys() else "", 
+                        str(article["source"]).decode("utf8") if "source" in article.keys() else "", 
+                        str(article["document_type"]).decode("utf8") if "document_type" in article.keys() else "", 
+                        article["web_url"] if "web_url" in article.keys() else "",
+                        str(article["news_desk"]).decode("utf8") if "news_desk" in article.keys() else "",
+                        str(article["section_name"]).decode("utf8") if "section_name" in article.keys() else "",
+                        str(article["snippet"]).decode("utf8").replace("\n","") if "snippet" in article.keys() else "",
+                        str(article["lead_paragraph"]).decode("utf8").replace("\n","") if "lead_paragraph" in article.keys() else "",
+                        ]
+                    line = "\t".join(variables)
+                    out_file.write(line.encode("utf8")+"\n")
+            except KeyError as e:
+                logging.error("KeyError in %s page %s: %s %s", date, file_number, e.errno, e.strerror)
+                continue
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except: 
+                logging.error("Error on %s page %s: %s", date, file_number, sys.exc_info()[0])
+                continue
         
-        out_file.close()
+            out_file.close()
+        else:
+            break
         
 # Main function where stuff gets done
 
@@ -132,9 +145,9 @@ def main():
     json_file_path = args.json
     csv_file_name = args.csv
     api_key = args.key    
-    start = datetime.date( year = 2013, month = 2, day = 6 )
-    end = datetime.date( year = 2013, month = 2, day = 7 )
-    log_file = "".join([json_file_path,"getTimesArticles.log"])
+    start = datetime.date( year = 2013, month = 1, day = 1 )
+    end = datetime.date( year = 2013, month = 1, day = 1 )
+    log_file = "".join([json_file_path,"getTimesArticles_testing.log"])
     logging.basicConfig(filename=log_file, level=logging.INFO)
     
     logging.info("Getting started.") 
