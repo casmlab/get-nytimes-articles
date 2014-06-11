@@ -82,9 +82,12 @@ def parseArticles(date, tsv_file_name, json_file_path):
         # get the articles and put them into a dictionary
         try:
             file_name = getJsonFileName(date,file_number, json_file_path)
-            in_file = open(file_name, 'r')
-            articles = convert(json.loads(in_file.read()))
-            in_file.close()
+            if os.path.isfile(file_name):
+                in_file = open(file_name, 'r')
+                articles = convert(json.loads(in_file.read()))
+                in_file.close()
+            else:
+                break
         except IOError as e:
 			logging.error("IOError in %s page %s: %s %s", date, file_number, e.errno, e.strerror)
 			continue
