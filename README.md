@@ -1,7 +1,7 @@
 get-nytimes-articles
 ====================
 
-Python tools for getting data from the New York Times Article API. Retrieves JSON from the API, stores it, parses it into a CSV file.
+Python tools for getting data from the New York Times Article API. Retrieves JSON from the API, stores it, parses it into a TSV file.
 
 New York Times Article API Docs: http://developer.nytimes.com/docs/read/article_search_api_v2
 
@@ -10,6 +10,7 @@ Requesting an API Key for the Times API: http://developer.nytimes.com/docs/refer
 ## Recent Updates
 - use config file instead of manually editing lines in main .py file
 - check whether file exists before trying to parse it (See Issue #1)
+- changed references to CSV to TSV since that's what really gets produced
 - make script smart about whether or not to keep fetching for that day (i.e., stop when no more articles)
 - solve KeyError issues in parse module
 - get better info from API calls with errors
