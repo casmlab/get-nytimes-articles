@@ -9,6 +9,7 @@ Requesting an API Key for the Times API: http://developer.nytimes.com/docs/refer
 
 ## Recent Updates
 - use config file instead of manually editing lines in main .py file
+- check whether file exists before trying to parse it (See Issue #1)
 - make script smart about whether or not to keep fetching for that day (i.e., stop when no more articles)
 - solve KeyError issues in parse module
 - get better info from API calls with errors
