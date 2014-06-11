@@ -21,7 +21,7 @@ Modules:
 - datetime
 - time
 - sys
-- argparse
+- ConfigParser
 - logging
 
 ## Why store the JSON files? Why not just parse them?
@@ -33,7 +33,5 @@ Set your variables in the config file (copy settings_example.cfg to settings.cfg
 ```python getTimesArticles.py```
 
 ## Planned improvements
-- accept query parameters from command line
-- accept dates from the command line
 - capture and re-request page after intermittent "504: Bad Gateway" errors
 - make script smart about running multi-day processes (i.e., respect the API limit and wait when more than 10K calls are needed)
