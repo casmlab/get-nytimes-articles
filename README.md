@@ -27,9 +27,9 @@ Modules:
 The New York Times is nice enough to allow programmatic access to its articles, but that doesn't mean I should query the API every time I want data. Instead, I query it once and cache the raw data, lessening the burden on the Times API. Then, I parse that raw data into whatever format I need - in this case a tab-delimited file with only some of the fields - and leave the raw data alone. Next time I have a research question that relies on the same articles, I can just re-parse the stored JSON files into whatever format helps me answer my new question.
 
 ## Usage
-Within the script, set your query parameters on line 54. See the Times API docs for available filters. The example query returns all articles for a given date range (set in lines 118 and 119).
+Set your variables in the config file (copy settings_example.cfg to settings.cfg).
 
-```python getTimesArticles.py -j JSON_FOLDER_PATH -c OUTPUT_FILE -k API_KEY```
+```python getTimesArticles.py```
 
 ## Planned improvements
 - accept query parameters from command line
