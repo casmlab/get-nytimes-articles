@@ -2,10 +2,11 @@ import urllib2
 import json
 import datetime
 import time
-import sys
-import argparse
+import sys, os
 import logging
 from urllib2 import HTTPError
+from ConfigParser import SafeConfigParser
+
 
 # helper function to iterate through dates
 def daterange( start_date, end_date ):
@@ -47,11 +48,11 @@ def getMultiples(items, key):
     return values_list
     
 # get the articles from the NYTimes Article API    
-def getArticles(date, api_key, json_file_path):
+def getArticles(date, query, api_key, json_file_path):
     # LOOP THROUGH THE 101 PAGES NYTIMES ALLOWS FOR THAT DATE
     for page in range(101):
         try:
-            request_string = "http://api.nytimes.com/svc/search/v2/articlesearch.json?begin_date=" + date + "&end_date=" + date + "&page=" + str(page) + "&api-key=" + api_key
+            request_string = "http://api.nytimes.com/svc/search/v2/articlesearch.json?q=" + query + "&begin_date=" + date + "&end_date=" + date + "&page=" + str(page) + "&api-key=" + api_key
             response = urllib2.urlopen(request_string)
             content = response.read()
             if content:
@@ -75,7 +76,8 @@ def getArticles(date, api_key, json_file_path):
             continue
 
 # parse the JSON files you stored into a tab-delimited file
-def parseArticles(date, csv_file_name, json_file_path):
+def parseArticles(date, tsv_file_name, json_file_path):
+
     for file_number in range(101):
         # get the articles and put them into a dictionary
         try:
@@ -89,14 +91,16 @@ def parseArticles(date, csv_file_name, json_file_path):
         
         # if there are articles in that document, parse them
         if len(articles["response"]["docs"]) >= 1:  
-            # open the CSV for appending
+
+            # open the tsv for appending
             try:
-                out_file = open(csv_file_name, 'ab')
+                out_file = open(tsv_file_name, 'ab')
+
             except IOError as e:
-    			logging.error("IOError: %s %s", date, file_number, e.errno, e.strerror)
+    			logging.error("IOError: %s %s %s %s", date, file_number, e.errno, e.strerror)
     			continue
         
-            # loop through the articles putting what we need in a CSV   
+            # loop through the articles putting what we need in a tsv   
             try:
                 for article in articles["response"]["docs"]:
                     # if (article["source"] == "The New York Times" and article["document_type"] == "article"):
@@ -134,20 +138,21 @@ def parseArticles(date, csv_file_name, json_file_path):
 # Main function where stuff gets done
 
 def main():
-    parser = argparse.ArgumentParser(description="A Python tool for grabbing data from the New York Times Article API.")
-    parser.add_argument('-j','--json', required=True, help="path to the folder where you want the JSON files stored")
-    parser.add_argument('-c','--csv', required=True, help="path to the file where you want the CSV file stored")
-    parser.add_argument('-k','--key', required=True, help="your NY Times Article API key")
-    # parser.add_argument('-s','--start-date', required=True, help="start date for collecting articles")
-    # parser.add_argument('-e','--end-date', required=True, help="end date for collecting articles")
-    args = parser.parse_args()
     
-    json_file_path = args.json
-    csv_file_name = args.csv
-    api_key = args.key    
-    start = datetime.date( year = 2013, month = 1, day = 1 )
-    end = datetime.date( year = 2013, month = 1, day = 1 )
-    log_file = "".join([json_file_path,"getTimesArticles_testing.log"])
+    config = SafeConfigParser()
+    script_dir = os.path.dirname(__file__)
+    config_file = os.path.join(script_dir, 'config/settings.cfg')
+    config.read(config_file)
+    
+    json_file_path = config.get('files','json_folder')
+    tsv_file_name = config.get('files','tsv_file')
+    log_file = config.get('files','logfile')
+    
+    api_key = config.get('nytimes','api_key')    
+    start = datetime.date( year = int(config.get('nytimes','start_year')), month = int(config.get('nytimes','start_month')), day = int(config.get('nytimes','start_day')) )
+    end = datetime.date( year = int(config.get('nytimes','end_year')), month = int(config.get('nytimes','end_month')), day = int(config.get('nytimes','end_day')) )
+    query = config.get('nytimes','query')
+        
     logging.basicConfig(filename=log_file, level=logging.INFO)
     
     logging.info("Getting started.") 
@@ -156,8 +161,8 @@ def main():
         for date in daterange( start, end ):
             date = date.strftime("%Y%m%d")
             logging.info("Working on %s." % date)
-            getArticles(date, api_key, json_file_path)
-            parseArticles(date, csv_file_name, json_file_path)
+            getArticles(date, query, api_key, json_file_path)
+            parseArticles(date, tsv_file_name, json_file_path)
     except:
         logging.error("Unexpected error: %s", str(sys.exc_info()[0]))
     finally:
