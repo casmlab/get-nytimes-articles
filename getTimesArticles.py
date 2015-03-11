@@ -52,7 +52,8 @@ def getArticles(date, query, api_key, json_file_path):
     # LOOP THROUGH THE 101 PAGES NYTIMES ALLOWS FOR THAT DATE
     for page in range(101):
         try:
-            request_string = "http://api.nytimes.com/svc/search/v2/articlesearch.json?q=" + query + "&begin_date=" + date + "&end_date=" + date + "&page=" + str(page) + "&api-key=" + api_key
+            # request_string = "http://api.nytimes.com/svc/search/v2/articlesearch.json?q=" + query + "&begin_date=" + date + "&end_date=" + date + "&page=" + str(page) + "&api-key=" + api_key
+            request_string = "http://api.nytimes.com/svc/search/v2/articlesearch.json?begin_date=" + date + "&end_date=" + date + "&page=" + str(page) + "&api-key=" + api_key
             response = urllib2.urlopen(request_string)
             content = response.read()
             if content:
@@ -71,6 +72,9 @@ def getArticles(date, query, api_key, json_file_path):
             time.sleep(3)
         except HTTPError as e:
             logging.error("HTTPError on page %s on %s (err no. %s: %s) Here's the URL of the call: %s", page, date, e.code, e.reason, request_string)
+            if e.code == 403:
+              logging.info("Quitting. You've probably reached your API limit for the day.")
+              sys.exit()
         except: 
             logging.error("Error on %s page %s: %s", date, file_number, sys.exc_info()[0])
             continue
