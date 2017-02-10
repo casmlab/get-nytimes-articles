@@ -74,7 +74,8 @@ def getArticles(date, query, api_key, json_file_path):
             logging.error("HTTPError on page %s on %s (err no. %s: %s) Here's the URL of the call: %s", page, date, e.code, e.reason, request_string)
             if e.code == 403:
               logging.info("Quitting. You've probably reached your API limit for the day.")
-              sys.exit()
+              print "Script hit a snag and got an HTTPError 403. Check your log file for more info."
+              # sys.exit()
         except: 
             logging.error("Error on %s page %s: %s", date, file_number, sys.exc_info()[0])
             continue
@@ -93,8 +94,8 @@ def parseArticles(date, tsv_file_name, json_file_path):
             else:
                 break
         except IOError as e:
-			logging.error("IOError in %s page %s: %s %s", date, file_number, e.errno, e.strerror)
-			continue
+            logging.error("IOError in %s page %s: %s %s", date, file_number, e.errno, e.strerror)
+            continue
         
         # if there are articles in that document, parse them
         if len(articles["response"]["docs"]) >= 1:  
@@ -104,8 +105,8 @@ def parseArticles(date, tsv_file_name, json_file_path):
                 out_file = open(tsv_file_name, 'ab')
 
             except IOError as e:
-    			logging.error("IOError: %s %s %s %s", date, file_number, e.errno, e.strerror)
-    			continue
+                logging.error("IOError: %s %s %s %s", date, file_number, e.errno, e.strerror)
+                continue
         
             # loop through the articles putting what we need in a tsv   
             try:
@@ -177,4 +178,3 @@ def main():
 
 if __name__ == '__main__' :
     main()
-    
