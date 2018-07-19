@@ -53,7 +53,7 @@ def getArticles(date, query, api_key, json_file_path):
     for page in range(101):
         for n in range(5): # 5 tries
             try:
-                request_string = "http://api.nytimes.com/svc/search/v2/articlesearch.json?begin_date=" + date + "&end_date=" + date + "&page=" + str(page) + "&api-key=" + api_key
+                request_string = "http://api.nytimes.com/svc/search/v2/articlesearch.json?q=" + query + "&begin_date=" + date + "&end_date=" + date + "&page=" + str(page) + "&api-key=" + api_key
                 response = urllib2.urlopen(request_string)
                 content = response.read()
                 if content:
